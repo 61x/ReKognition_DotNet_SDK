@@ -1,0 +1,87 @@
+using System;
+using System.Windows.Forms;
+
+namespace rekognition_api
+{
+    class Base64Codec
+    {
+        const string kBase64Chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+        private bool CheckBase64(char c)
+        {
+	        return (char.IsLetterOrDigit(c) || (c == '+') || (c == '/'));
+        }
+
+        private void StrAppend(char c, ref string str)
+        {   // no '+' in url
+	        if (c == '+')  str += "%2B";
+            else           str += c; 
+        }
+
+        public bool Encode(string input, ref string output)
+        {
+	        if (output == null)
+            {
+		        MessageBox.Show("Null output is passed");
+		        return false;
+	        }
+
+	        int i = 0;
+	        char[] char_array_3 = new char[3];
+	        char[] char_array_4 = new char[4];
+
+	        int in_len = input.Length;
+            int c_pos = 0;
+	        char bytes_to_encode = Convert.ToChar(input.Substring(c_pos, 1));
+
+	        while (in_len--!=0)
+            {
+		        char_array_3[i++] = Convert.ToChar(input.Substring(c_pos++, 1));
+		        if (i == 3)
+                {
+			        char_array_4[0] = Convert.ToChar((char_array_3[0] & 0xfc) >> 2);
+			        char_array_4[1] = Convert.ToChar(((char_array_3[0] & 0x03) << 4) + ((char_array_3[1] & 0xf0) >> 4));
+			        char_array_4[2] = Convert.ToChar(((char_array_3[1] & 0x0f) << 2) + ((char_array_3[2] & 0xc0) >> 6));
+			        char_array_4[3] = Convert.ToChar(char_array_3[2] & 0x3f);
+
+			        for (i = 0; (i < 4); i++)
+                        StrAppend( Convert.ToChar(kBase64Chars.Substring( Convert.ToInt32(char_array_4[i]), 1 )), ref output);
+
+			        i = 0;
+		        }
+	        }
+
+	        int temp;
+
+	        switch (input.Length % 3)
+            {
+                case 1:
+                    {
+                        temp = Convert.ToInt32(char_array_3[0] << 16); //Convert to big endian
+                        StrAppend(Convert.ToChar(kBase64Chars.Substring((temp & 0x00FC0000) >> 18, 1)), ref output);
+                        StrAppend(Convert.ToChar(kBase64Chars.Substring((temp & 0x0003F000) >> 12, 1)), ref output);
+                        output += "==";
+                        break;
+                    }
+                case 2:
+                    {
+                        temp = Convert.ToInt32(char_array_3[0] << 16); //Convert to big endian
+                        temp += char_array_3[1] << 8;
+                        StrAppend(Convert.ToChar(kBase64Chars.Substring((temp & 0x00FC0000) >> 18, 1)), ref output);
+                        StrAppend(Convert.ToChar(kBase64Chars.Substring((temp & 0x0003F000) >> 12, 1)), ref output);
+                        StrAppend(Convert.ToChar(kBase64Chars.Substring((temp & 0x00000FC0) >> 6, 1)), ref output);
+                        output += '=';
+                        break;
+                    }
+	        }
+
+	        return true;
+        }
+
+        public bool Decode(string input, ref string output)
+        {
+            MessageBox.Show("Decode Not implemented.");
+            return false;
+        }
+    }
+}
